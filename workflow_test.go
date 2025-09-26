@@ -57,7 +57,7 @@ func TestWorkflow_AddActivities_InvalidFunction(t *testing.T) {
 	// Test with non-function
 	err = workflow.AddActivities("not a function")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "activity must be a function")
+	require.Contains(t, err.Error(), "must be a function")
 
 	// Test with function missing context parameter
 	invalidFunc := func(a int) (int, error) {
@@ -80,7 +80,7 @@ func TestNewWorkflow_InvalidFunction(t *testing.T) {
 	// Test with non-function
 	_, err := pitlane.NewWorkflow("not a function")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "workflow must be a function")
+	require.Contains(t, err.Error(), "must be a function")
 
 	// Test with function missing context parameter
 	invalidFunc := func(a int) (int, error) {
