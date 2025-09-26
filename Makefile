@@ -1,4 +1,4 @@
-.PHONY: build test lint clean help
+.PHONY: build test lint fmt clean help
 
 # Build the project
 build:
@@ -12,6 +12,10 @@ test:
 lint:
 	golangci-lint run
 
+# Format code
+fmt:
+	gofmt -w .
+
 # Clean build artifacts
 clean:
 	go clean ./...
@@ -22,5 +26,6 @@ help:
 	@echo "  build  - Build the project"
 	@echo "  test   - Run tests"
 	@echo "  lint   - Run linter"
+	@echo "  fmt    - Format code with gofmt"
 	@echo "  clean  - Clean build artifacts"
 	@echo "  help   - Show this help message"

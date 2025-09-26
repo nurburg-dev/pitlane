@@ -11,9 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var pgContainer *utils.PGTestContainer
-
-var tables = []string{"workflows", "workflow_runs"}
+var (
+	pgContainer *utils.PGTestContainer
+	tables      = []string{"workflows", "workflow_runs"}
+)
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
