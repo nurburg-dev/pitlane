@@ -2,7 +2,7 @@
   "name": "Go with PostgreSQL",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
-  "workspaceFolder": "/workspaces/nurburg-pitlane",
+  "workspaceFolder": "/workspaces",
   "shutdownAction": "stopCompose",
   "postCreateCommand": "sudo apt-get update && sudo apt-get install -y postgresql-client && go mod download",
   "features": {
@@ -10,7 +10,12 @@
       "version": "1.24"
     },
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "azureDnsAutoDetection": true,
+      "installDockerBuildx": true
+    }
   },
   "customizations": {
     "vscode": {
