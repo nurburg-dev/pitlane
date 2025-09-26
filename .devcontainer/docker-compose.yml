@@ -4,7 +4,7 @@ services:
   app:
     image: mcr.microsoft.com/devcontainers/base:ubuntu-22.04
     volumes:
-      - ../..:/workspaces:cached
+      - ..:/workspaces:cached
     command: sleep infinity
     network_mode: service:db
     depends_on:
