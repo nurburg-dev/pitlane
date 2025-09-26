@@ -1,0 +1,39 @@
+{
+  "name": "Go with PostgreSQL",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/nurburg-pitlane",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y postgresql-client && go mod download",
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.24"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go",
+        "ms-vscode.vscode-json",
+        "cweijan.vscode-postgresql-client2"
+      ],
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true
+      }
+    }
+  },
+  "forwardPorts": [8080, 5400],
+  "portsAttributes": {
+    "5400": {
+      "label": "PostgreSQL",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Application",
+      "onAutoForward": "openPreview"
+    }
+  }
+}
