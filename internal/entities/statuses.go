@@ -16,9 +16,10 @@ const (
 type WorkflowStatus string
 
 const (
-	WorkflowStatusFailed    WorkflowStatus = "failed"
-	WorkflowStatusExecuting WorkflowStatus = "executing"
-	WorkflowStatusPending   WorkflowStatus = "pending"
-	WorkflowStatusFinished  WorkflowStatus = "finished"
-	WorkflowStatusAborted   WorkflowStatus = "aborted"
+	WorkflowStatusFailed          WorkflowStatus = "failed"
+	WorkflowStatusExecuting       WorkflowStatus = "executing"
+	WorkflowStatusPending         WorkflowStatus = "pending"
+	WorkflowStatusFinished        WorkflowStatus = "finished"
+	WorkflowStatusAborted         WorkflowStatus = "aborted"
+	WorkflowStatusWaitingActivity WorkflowStatus = "waiting_activity"
 )
