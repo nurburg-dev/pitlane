@@ -15,6 +15,7 @@ type WorkflowRepository interface {
 	UpsertWorkflow(ctx context.Context, workflow *entities.DBWorkflow) error
 	CreateWorkflowRun(ctx context.Context, workflowRun *entities.DBWorkflowRun) error
 	ChangeWorkflowRunStatus(ctx context.Context, workflowRunID string, status entities.WorkflowStatus) error
+	MarkWorkflowRunErrored(ctx context.Context, workflowRunID, errorMessage string) error
 }
 
 type PGWorkflowRepository struct {
@@ -115,6 +116,26 @@ func (r *PGWorkflowRepository) ChangeWorkflowRunStatus(
 		"status": status,
 	}
 
+	_, err := r.tx.Exec(ctx, query, pgx.NamedArgs(args))
+	return err
+}
+
+func (r *PGWorkflowRepository) MarkWorkflowRunErrored(
+	ctx context.Context,
+	workflowRunID string,
+	errorMessage string,
+) error {
+	query := `
+		UPDATE workflow_runs
+		SET status = @status, errorMessage = @errorMessage, updated_at = NOW()
+		WHERE id = @id
+	`
+
+	args := map[string]interface{}{
+		"id":           workflowRunID,
+		"errorMessage": errorMessage,
+		"status":       entities.WorkflowStatusFailed,
+	}
 	_, err := r.tx.Exec(ctx, query, pgx.NamedArgs(args))
 	return err
 }

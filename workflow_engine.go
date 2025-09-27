@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nurburg-dev/pitlane/internal/db"
 	"github.com/nurburg-dev/pitlane/internal/dbrepo"
@@ -63,52 +64,37 @@ func (we *WorkflowEngine) InvokeWorkflow(ctx context.Context, workflowFunction a
 
 	inputBytes, err := json.Marshal(args)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal workflow input: %w", err)
+		return "", err
 	}
 	now := time.Now()
+	wfRunId := ""
+	err = db.ExecuteTx(ctx, we.pgPool, func(ctx context.Context, tx pgx.Tx) error {
+		workflowRepo := dbrepo.NewPGWorkflowRepository(tx)
 
-	tx, err := we.pgPool.Begin(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
+		err = workflowRepo.UpsertWorkflow(
+			ctx,
+			&entities.DBWorkflow{
+				Name:      workflowFuncName,
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		)
+		if err != nil {
+			return err
+		}
 
-	workflowRepo := dbrepo.NewPGWorkflowRepository(tx)
+		wfRunId = db.GenerateReadableID()
+		workflowRun := &entities.DBWorkflowRun{
+			ID:           wfRunId,
+			Input:        inputBytes,
+			WorkflowName: workflowFuncName,
+			Status:       entities.WorkflowStatusPending,
+			ScheduledAt:  now,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
 
-	err = workflowRepo.UpsertWorkflow(
-		ctx,
-		&entities.DBWorkflow{
-			Name:      workflowFuncName,
-			CreatedAt: now,
-			UpdatedAt: now,
-		},
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed to upsert workflow: %w", err)
-	}
-
-	workflowRunID := db.GenerateReadableID()
-	workflowRun := &entities.DBWorkflowRun{
-		ID:           workflowRunID,
-		Input:        inputBytes,
-		WorkflowName: workflowFuncName,
-		Status:       entities.WorkflowStatusPending,
-		ScheduledAt:  now,
-		CreatedAt:    now,
-		UpdatedAt:    now,
-	}
-
-	err = workflowRepo.CreateWorkflowRun(ctx, workflowRun)
-	if err != nil {
-		return "", fmt.Errorf("failed to create workflow run: %w", err)
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return workflowRunID, nil
+		return workflowRepo.CreateWorkflowRun(ctx, workflowRun)
+	})
+	return wfRunId, err
 }
