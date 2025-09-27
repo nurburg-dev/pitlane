@@ -33,8 +33,10 @@ func generateRandomString(length int) string {
 	return string(b)
 }
 
+const idSuffixLength = 8
+
 func GenerateReadableID() string {
-	petname := petname.Generate(2, "-")
-	randomSuffix := generateRandomString(8)
-	return petname + "-" + randomSuffix
+	prefix := petname.Generate(2, "-")
+	randomSuffix := generateRandomString(idSuffixLength)
+	return prefix + "-" + randomSuffix
 }

@@ -1,19 +1,20 @@
-package txrepo
+package dbrepo
 
 import (
 	"context"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/nurburg-dev/pitlane"
 	"github.com/nurburg-dev/pitlane/internal/db"
+	"github.com/nurburg-dev/pitlane/internal/entities"
 )
 
 type ActivityRunRepository interface {
-	GetNextActivityRun(ctx context.Context) (*pitlane.DBActivityRun, error)
-	GetActivityRunHistory(ctx context.Context, workflowRunId string) ([]pitlane.DBActivityRun, error)
-	CreateActivityRun(ctx context.Context, activityRun *pitlane.DBActivityRun) error
-	ChangeActivityRunStatus(ctx context.Context, activityRunID string, status pitlane.ActivityStatus) error
+	GetNextActivityRun(ctx context.Context) (*entities.DBActivityRun, error)
+	GetActivityRunHistory(ctx context.Context, workflowRunId string) ([]entities.DBActivityRun, error)
+	CreateActivityRun(ctx context.Context, activityRun *entities.DBActivityRun) error
+	ChangeActivityRunStatus(ctx context.Context, activityRunID string, status entities.ActivityStatus) error
+	GetActivityRun(ctx context.Context, activityRunID string) (*entities.DBActivityRun, error)
 }
 
 type PGActivityRunRepository struct {
@@ -28,7 +29,7 @@ func NewPGActivityRunRepository(tx pgx.Tx) *PGActivityRunRepository {
 	}
 }
 
-func (r *PGActivityRunRepository) GetNextActivityRun(ctx context.Context) (*pitlane.DBActivityRun, error) {
+func (r *PGActivityRunRepository) GetNextActivityRun(ctx context.Context) (*entities.DBActivityRun, error) {
 	query := `
 		SELECT id, activity_name, workflow_run_id, errorMessage, input, output,
 			   status, retry_status, scheduled_at, created_at, updated_at
@@ -39,12 +40,12 @@ func (r *PGActivityRunRepository) GetNextActivityRun(ctx context.Context) (*pitl
 	`
 
 	args := map[string]interface{}{
-		"status": pitlane.ActivityStatusPending,
+		"status": entities.ActivityStatusPending,
 	}
 
 	row := r.tx.QueryRow(ctx, query, pgx.NamedArgs(args))
 
-	var activityRun pitlane.DBActivityRun
+	var activityRun entities.DBActivityRun
 	err := r.mapper.ScanRow(row, &activityRun)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -56,7 +57,10 @@ func (r *PGActivityRunRepository) GetNextActivityRun(ctx context.Context) (*pitl
 	return &activityRun, nil
 }
 
-func (r *PGActivityRunRepository) GetActivityRunHistory(ctx context.Context, workflowRunId string) ([]pitlane.DBActivityRun, error) {
+func (r *PGActivityRunRepository) GetActivityRunHistory(
+	ctx context.Context,
+	workflowRunId string,
+) ([]entities.DBActivityRun, error) {
 	query := `
 		SELECT id, activity_name, workflow_run_id, errorMessage, input, output,
 			   status, retry_status, scheduled_at, created_at, updated_at
@@ -74,7 +78,7 @@ func (r *PGActivityRunRepository) GetActivityRunHistory(ctx context.Context, wor
 		return nil, err
 	}
 
-	var activities []pitlane.DBActivityRun
+	var activities []entities.DBActivityRun
 	err = r.mapper.ScanRows(rows, &activities)
 	if err != nil {
 		return nil, err
@@ -83,7 +87,7 @@ func (r *PGActivityRunRepository) GetActivityRunHistory(ctx context.Context, wor
 	return activities, nil
 }
 
-func (r *PGActivityRunRepository) CreateActivityRun(ctx context.Context, activityRun *pitlane.DBActivityRun) error {
+func (r *PGActivityRunRepository) CreateActivityRun(ctx context.Context, activityRun *entities.DBActivityRun) error {
 	query := `
 		INSERT INTO activity_runs (id, activity_name, workflow_run_id, errorMessage, input, output,
 								  status, retry_status, scheduled_at, created_at, updated_at)
@@ -109,7 +113,11 @@ func (r *PGActivityRunRepository) CreateActivityRun(ctx context.Context, activit
 	return err
 }
 
-func (r *PGActivityRunRepository) ChangeActivityRunStatus(ctx context.Context, activityRunID string, status pitlane.ActivityStatus) error {
+func (r *PGActivityRunRepository) ChangeActivityRunStatus(
+	ctx context.Context,
+	activityRunID string,
+	status entities.ActivityStatus,
+) error {
 	query := `
 		UPDATE activity_runs
 		SET status = @status, updated_at = NOW()
@@ -123,4 +131,33 @@ func (r *PGActivityRunRepository) ChangeActivityRunStatus(ctx context.Context, a
 
 	_, err := r.tx.Exec(ctx, query, pgx.NamedArgs(args))
 	return err
+}
+
+func (r *PGActivityRunRepository) GetActivityRun(
+	ctx context.Context,
+	activityRunID string,
+) (*entities.DBActivityRun, error) {
+	query := `
+		SELECT id, activity_name, workflow_run_id, errorMessage, input, output,
+			   status, retry_status, scheduled_at, created_at, updated_at
+		FROM activity_runs
+		WHERE id = @id
+	`
+
+	args := map[string]interface{}{
+		"id": activityRunID,
+	}
+
+	row := r.tx.QueryRow(ctx, query, pgx.NamedArgs(args))
+
+	var activityRun entities.DBActivityRun
+	err := r.mapper.ScanRow(row, &activityRun)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &activityRun, nil
 }

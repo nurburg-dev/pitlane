@@ -1,4 +1,4 @@
-package txrepo_test
+package dbrepo_test
 
 import (
 	"context"
@@ -35,5 +35,4 @@ func TestMain(m *testing.M) {
 	if err := testContainer.Close(ctx); err != nil {
 		log.Printf("Failed to close test container: %v", err)
 	}
-
 }

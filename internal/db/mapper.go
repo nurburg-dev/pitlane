@@ -26,7 +26,7 @@ func (rm *RowMapper) ScanRow(row pgx.Row, dest interface{}) error {
 
 	// Create slice of pointers to struct fields
 	fieldPtrs := make([]interface{}, structType.NumField())
-	for i := 0; i < structType.NumField(); i++ {
+	for i := range structType.NumField() {
 		fieldPtrs[i] = structValue.Field(i).Addr().Interface()
 	}
 
@@ -54,8 +54,8 @@ func (rm *RowMapper) ScanRows(rows pgx.Rows, dest interface{}) error {
 		newElem := reflect.New(elementType).Elem()
 
 		// Create slice of pointers to struct fields
-		fieldPtrs := make([]interface{}, elementType.NumField())
-		for i := 0; i < elementType.NumField(); i++ {
+		fieldPtrs := make([]any, elementType.NumField())
+		for i := range elementType.NumField() {
 			fieldPtrs[i] = newElem.Field(i).Addr().Interface()
 		}
 

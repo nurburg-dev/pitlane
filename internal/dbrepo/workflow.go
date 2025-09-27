@@ -1,20 +1,20 @@
-package txrepo
+package dbrepo
 
 import (
 	"context"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/nurburg-dev/pitlane"
 	"github.com/nurburg-dev/pitlane/internal/db"
+	"github.com/nurburg-dev/pitlane/internal/entities"
 )
 
 type WorkflowRepository interface {
-	GetNextWorkflowRun(ctx context.Context) (*pitlane.DBWorkflowRun, error)
-	GetWorkflow(ctx context.Context, name string) (*pitlane.DBWorkflow, error)
-	UpsertWorkflow(ctx context.Context, workflow *pitlane.DBWorkflow) error
-	CreateWorkflowRun(ctx context.Context, workflowRun *pitlane.DBWorkflowRun) error
-	ChangeWorkflowRunStatus(ctx context.Context, workflowRunID string, status pitlane.WorkflowStatus) error
+	GetNextWorkflowRun(ctx context.Context) (*entities.DBWorkflowRun, error)
+	GetWorkflow(ctx context.Context, name string) (*entities.DBWorkflow, error)
+	UpsertWorkflow(ctx context.Context, workflow *entities.DBWorkflow) error
+	CreateWorkflowRun(ctx context.Context, workflowRun *entities.DBWorkflowRun) error
+	ChangeWorkflowRunStatus(ctx context.Context, workflowRunID string, status entities.WorkflowStatus) error
 }
 
 type PGWorkflowRepository struct {
@@ -29,7 +29,7 @@ func NewPGWorkflowRepository(tx pgx.Tx) *PGWorkflowRepository {
 	}
 }
 
-func (r *PGWorkflowRepository) GetNextWorkflowRun(ctx context.Context) (*pitlane.DBWorkflowRun, error) {
+func (r *PGWorkflowRepository) GetNextWorkflowRun(ctx context.Context) (*entities.DBWorkflowRun, error) {
 	query := `
 		SELECT id, input, workflow_name, status, scheduled_at, created_at, updated_at
 		FROM workflow_runs
@@ -39,12 +39,12 @@ func (r *PGWorkflowRepository) GetNextWorkflowRun(ctx context.Context) (*pitlane
 	`
 
 	args := map[string]interface{}{
-		"status": pitlane.WorkflowStatusPending,
+		"status": entities.WorkflowStatusPending,
 	}
 
 	row := r.tx.QueryRow(ctx, query, pgx.NamedArgs(args))
 
-	var workflowRun pitlane.DBWorkflowRun
+	var workflowRun entities.DBWorkflowRun
 	err := r.mapper.ScanRow(row, &workflowRun)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -56,7 +56,7 @@ func (r *PGWorkflowRepository) GetNextWorkflowRun(ctx context.Context) (*pitlane
 	return &workflowRun, nil
 }
 
-func (r *PGWorkflowRepository) GetWorkflow(ctx context.Context, name string) (*pitlane.DBWorkflow, error) {
+func (r *PGWorkflowRepository) GetWorkflow(ctx context.Context, name string) (*entities.DBWorkflow, error) {
 	query := `
 		SELECT name, created_at, updated_at
 		FROM workflows
@@ -69,7 +69,7 @@ func (r *PGWorkflowRepository) GetWorkflow(ctx context.Context, name string) (*p
 
 	row := r.tx.QueryRow(ctx, query, pgx.NamedArgs(args))
 
-	var workflow pitlane.DBWorkflow
+	var workflow entities.DBWorkflow
 	err := r.mapper.ScanRow(row, &workflow)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -81,7 +81,7 @@ func (r *PGWorkflowRepository) GetWorkflow(ctx context.Context, name string) (*p
 	return &workflow, nil
 }
 
-func (r *PGWorkflowRepository) UpsertWorkflow(ctx context.Context, workflow *pitlane.DBWorkflow) error {
+func (r *PGWorkflowRepository) UpsertWorkflow(ctx context.Context, workflow *entities.DBWorkflow) error {
 	query := `
 		INSERT INTO workflows (name, created_at, updated_at)
 		VALUES (@name, @created_at, @updated_at)
@@ -99,7 +99,11 @@ func (r *PGWorkflowRepository) UpsertWorkflow(ctx context.Context, workflow *pit
 	return err
 }
 
-func (r *PGWorkflowRepository) ChangeWorkflowRunStatus(ctx context.Context, workflowRunID string, status pitlane.WorkflowStatus) error {
+func (r *PGWorkflowRepository) ChangeWorkflowRunStatus(
+	ctx context.Context,
+	workflowRunID string,
+	status entities.WorkflowStatus,
+) error {
 	query := `
 		UPDATE workflow_runs
 		SET status = @status, updated_at = NOW()
@@ -115,7 +119,7 @@ func (r *PGWorkflowRepository) ChangeWorkflowRunStatus(ctx context.Context, work
 	return err
 }
 
-func (r *PGWorkflowRepository) CreateWorkflowRun(ctx context.Context, workflowRun *pitlane.DBWorkflowRun) error {
+func (r *PGWorkflowRepository) CreateWorkflowRun(ctx context.Context, workflowRun *entities.DBWorkflowRun) error {
 	query := `
 		INSERT INTO workflow_runs (id, input, workflow_name, status, scheduled_at, created_at, updated_at)
 		VALUES (@id, @input, @workflow_name, @status, @scheduled_at, @created_at, @updated_at)

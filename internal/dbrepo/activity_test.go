@@ -1,4 +1,4 @@
-package txrepo_test
+package dbrepo_test
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nurburg-dev/pitlane"
 	"github.com/nurburg-dev/pitlane/internal/db"
-	"github.com/nurburg-dev/pitlane/internal/txrepo"
+	"github.com/nurburg-dev/pitlane/internal/dbrepo"
+	"github.com/nurburg-dev/pitlane/internal/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,14 +24,16 @@ func TestPGActivityRunRepository_CreateAndGetNextActivityRun(t *testing.T) {
 	// Start transaction
 	tx, err := conn.Begin(ctx)
 	require.NoError(t, err)
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	// Create workflow repository and insert test data
-	workflowRepo := txrepo.NewPGWorkflowRepository(tx)
+	workflowRepo := dbrepo.NewPGWorkflowRepository(tx)
 
 	// Create test workflow
 	now := time.Now()
-	workflow := &pitlane.DBWorkflow{
+	workflow := &entities.DBWorkflow{
 		Name:      "test-workflow",
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -41,11 +43,11 @@ func TestPGActivityRunRepository_CreateAndGetNextActivityRun(t *testing.T) {
 
 	// Create test workflow run
 	workflowRunID := db.GenerateReadableID()
-	workflowRun := &pitlane.DBWorkflowRun{
+	workflowRun := &entities.DBWorkflowRun{
 		ID:           workflowRunID,
 		Input:        json.RawMessage(`{}`),
 		WorkflowName: "test-workflow",
-		Status:       pitlane.WorkflowStatusPending,
+		Status:       entities.WorkflowStatusPending,
 		ScheduledAt:  now,
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -54,15 +56,15 @@ func TestPGActivityRunRepository_CreateAndGetNextActivityRun(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create activity repository
-	repo := txrepo.NewPGActivityRunRepository(tx)
+	repo := dbrepo.NewPGActivityRunRepository(tx)
 
 	// Test data
-	activityRun := &pitlane.DBActivityRun{
+	activityRun := &entities.DBActivityRun{
 		ID:            db.GenerateReadableID(),
 		ActivityName:  "test-activity",
 		WorkflowRunID: workflowRunID,
 		Input:         json.RawMessage(`{"test": "data"}`),
-		Status:        pitlane.ActivityStatusPending,
+		Status:        entities.ActivityStatusPending,
 		ScheduledAt:   now,
 		CreatedAt:     now,
 		UpdatedAt:     now,
@@ -84,7 +86,7 @@ func TestPGActivityRunRepository_CreateAndGetNextActivityRun(t *testing.T) {
 	assert.JSONEq(t, string(activityRun.Input), string(nextActivity.Input))
 
 	// Test ChangeActivityRunStatus
-	err = repo.ChangeActivityRunStatus(ctx, activityRun.ID, pitlane.ActivityStatusExecuting)
+	err = repo.ChangeActivityRunStatus(ctx, activityRun.ID, entities.ActivityStatusExecuting)
 	require.NoError(t, err)
 
 	// Verify status changed by getting the next activity run (should be nil since it's executing)

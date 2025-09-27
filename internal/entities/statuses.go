@@ -1,4 +1,4 @@
-package pitlane
+package entities
 
 type ActivityRetryStatus struct {
 	RetryCount int

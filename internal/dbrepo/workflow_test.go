@@ -1,4 +1,4 @@
-package txrepo_test
+package dbrepo_test
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nurburg-dev/pitlane"
 	"github.com/nurburg-dev/pitlane/internal/db"
-	"github.com/nurburg-dev/pitlane/internal/txrepo"
+	"github.com/nurburg-dev/pitlane/internal/dbrepo"
+	"github.com/nurburg-dev/pitlane/internal/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,14 +24,16 @@ func TestPGWorkflowRepository_UpsertAndGetWorkflow(t *testing.T) {
 	// Start transaction
 	tx, err := conn.Begin(ctx)
 	require.NoError(t, err)
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	// Create repository
-	repo := txrepo.NewPGWorkflowRepository(tx)
+	repo := dbrepo.NewPGWorkflowRepository(tx)
 
 	// Test data
 	now := time.Now()
-	workflow := &pitlane.DBWorkflow{
+	workflow := &entities.DBWorkflow{
 		Name:      "test-workflow",
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -49,11 +51,11 @@ func TestPGWorkflowRepository_UpsertAndGetWorkflow(t *testing.T) {
 	assert.Equal(t, workflow.Name, retrievedWorkflow.Name)
 
 	// Test CreateWorkflowRun
-	workflowRun := &pitlane.DBWorkflowRun{
+	workflowRun := &entities.DBWorkflowRun{
 		ID:           db.GenerateReadableID(),
 		Input:        json.RawMessage(`{"test": "input"}`),
 		WorkflowName: "test-workflow",
-		Status:       pitlane.WorkflowStatusPending,
+		Status:       entities.WorkflowStatusPending,
 		ScheduledAt:  now,
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -73,7 +75,7 @@ func TestPGWorkflowRepository_UpsertAndGetWorkflow(t *testing.T) {
 	assert.JSONEq(t, string(workflowRun.Input), string(nextRun.Input))
 
 	// Test ChangeWorkflowRunStatus
-	err = repo.ChangeWorkflowRunStatus(ctx, workflowRun.ID, pitlane.WorkflowStatusExecuting)
+	err = repo.ChangeWorkflowRunStatus(ctx, workflowRun.ID, entities.WorkflowStatusExecuting)
 	require.NoError(t, err)
 
 	// Verify status changed by getting the next workflow run (should be nil since it's executing)

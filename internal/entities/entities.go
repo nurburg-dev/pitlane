@@ -1,4 +1,4 @@
-package pitlane
+package entities
 
 import (
 	"encoding/json"
