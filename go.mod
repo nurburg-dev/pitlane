@@ -3,6 +3,7 @@ module github.com/nurburg-dev/pitlane
 go 1.24.0
 
 require (
+	github.com/dustinkirkland/golang-petname v0.0.0-20240428194347-eebcea082ee0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.35.0

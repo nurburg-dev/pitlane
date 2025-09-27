@@ -9,7 +9,7 @@ type ActivityStatus string
 const (
 	ActivityStatusExecuting ActivityStatus = "executing"
 	ActivityStatusFailed    ActivityStatus = "failed"
-	ActivityStatusWaiting   ActivityStatus = "waiting"
+	ActivityStatusPending   ActivityStatus = "pending"
 	ActivityStatusFinished  ActivityStatus = "finished"
 )
 
@@ -18,6 +18,7 @@ type WorkflowStatus string
 const (
 	WorkflowStatusFailed    WorkflowStatus = "failed"
 	WorkflowStatusExecuting WorkflowStatus = "executing"
+	WorkflowStatusPending   WorkflowStatus = "pending"
 	WorkflowStatusFinished  WorkflowStatus = "finished"
 	WorkflowStatusAborted   WorkflowStatus = "aborted"
 )

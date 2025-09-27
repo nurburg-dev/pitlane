@@ -2,7 +2,10 @@ package db
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
+	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -17,4 +20,21 @@ func TableExists(ctx context.Context, pool *pgxpool.Pool, tableName string) (boo
 	`
 	err := pool.QueryRow(ctx, query, tableName).Scan(&exists)
 	return exists, err
+}
+
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func generateRandomString(length int) string {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rng.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func GenerateReadableID() string {
+	petname := petname.Generate(2, "-")
+	randomSuffix := generateRandomString(8)
+	return petname + "-" + randomSuffix
 }
